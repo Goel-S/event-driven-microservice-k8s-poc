@@ -1,58 +1,83 @@
-# Product Service – Clean Architecture POC
+# Event-Driven Microservice on Kubernetes – POC
 
 ## Overview
-This repository demonstrates a **Java Spring Boot Product Service** built using **Clean / Hexagonal Architecture (Ports & Adapters)**.
-It is designed as an **architect-level POC** to showcase:
-- Clear separation of concerns
-- NFR-driven design
-- Event-driven integration (Kafka)
-- Containerization and Kubernetes deployment readiness
+This Proof of Concept demonstrates an **event-driven microservice** built using **Spring Boot**, **Kafka**, **Docker**, and **Kubernetes**, following **Clean / Hexagonal Architecture** principles.
 
-## Architecture
-- **Domain**: Pure business logic (Product, ProductRepository)
-- **Application**: Use cases (CreateProductUseCase, GetProductUseCase)
-- **Adapters**
-  - Inbound: REST Controllers
-  - Outbound: JPA Repository, Kafka Producer
+The objective is to showcase **architect-level design decisions**, not just application code.
 
-## Tech Stack
-- Java 17+
-- Spring Boot
-- Spring Data JPA
-- Kafka
-- Docker
-- Kubernetes (YAML manifests)
-- H2 / PostgreSQL (configurable)
+---
 
-## Run Locally
-```bash
-mvn clean spring-boot:run
-```
+## Architecture Style
+- Clean Architecture (Domain, Application, Adapter layers)
+- Hexagonal / Ports & Adapters pattern
+- Event-driven communication using Kafka
+- REST APIs for synchronous interactions
 
-## Docker
-```bash
-docker build -t product-service .
-docker run -p 8080:8080 product-service
-```
+---
 
-## Kafka (Local / K8s)
-Kafka is used to publish `ProductCreatedEvent` asynchronously.
+## Event Flow
+1. Client calls `POST /products`
+2. Product Service persists product
+3. `ProductCreatedEvent` is published to Kafka
+4. Kafka consumers process the event independently
 
-## API
-- POST /products
-- GET /products/{id}
+This enables loose coupling and scalability.
 
-## Non-Functional Requirements (NFRs)
-- Low latency (<150ms P95)
-- Horizontal scalability
-- Eventual consistency for downstream consumers
-- Observability-ready (logs + metrics hooks)
+---
 
-## Why Clean Architecture?
-- Framework independence
-- Testability
-- Long-term maintainability
-- Easy replacement of adapters (DB, Messaging, APIs)
+## Local Development Strategy
 
-## Author
-Shivendra Goel
+Due to known limitations of running Kafka inside local Kubernetes clusters, the following hybrid approach is used:
+
+| Component | Runtime |
+|---------|--------|
+| Kafka + Zookeeper | Docker Compose |
+| Product Service | Kubernetes |
+| Communication | `host.docker.internal:9092` |
+
+This mirrors real-world setups where infrastructure components are external or managed.
+
+---
+
+## Observability
+
+### Logging
+- Structured logging using SLF4J
+- Logs written to stdout (Kubernetes-friendly)
+- Trace and span IDs included in log context
+
+### Metrics
+- Spring Boot Actuator enabled
+- Micrometer metrics exposed
+- Prometheus-compatible endpoint
+
+Endpoints:
+- `/actuator/health`
+- `/actuator/metrics`
+- `/actuator/prometheus`
+
+### Tracing
+- Micrometer Tracing (Brave)
+- Context propagated across REST and Kafka
+
+---
+
+## Kubernetes Deployment
+- Product Service deployed as a `Deployment`
+- Exposed via `NodePort`
+- Kafka treated as an external dependency
+
+Deployment manifests are available under the `k8s/` directory.
+
+---
+
+## Production Considerations
+- Kafka would be a managed service (MSK / Confluent / Aiven)
+- Prometheus + Grafana for monitoring
+- Jaeger / Tempo for distributed tracing
+- CI/CD pipeline for automated deployments
+
+---
+
+## License
+MIT License
