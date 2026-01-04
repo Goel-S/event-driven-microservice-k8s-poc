@@ -78,6 +78,43 @@ Deployment manifests are available under the `k8s/` directory.
 - CI/CD pipeline for automated deployments
 
 ---
+## 🚀 How to Run the POC (Step-by-Step)
+
+###  Clone the Repository
+```bash
+git clone https://github.com/Goel-S/event-driven-microservice-k8s-poc.git
+cd event-driven-microservice-k8s-poc
+
+### 1️⃣ Start Kafka & Zookeeper (Docker Compose)
+docker-compose up -d
+docker ps
+
+### Kafka will be available at:
+localhost:9092
+
+### 2️⃣ Build the Application
+mvn clean package
+
+### 3️⃣ Option A – Run Locally (Without Kubernetes)
+mvn spring-boot:run
+###Access API:
+http://localhost:8080
+
+### 4️⃣ Option B – Run via Docker
+docker build -t product-service .
+docker run -p 8080:8080 product-service
+
+### 5️⃣ Option C – Deploy Product Service to Kubernetes
+kubectl apply -f k8s/product-deployment.yaml
+
+### Verify
+kubectl get pods
+kubectl get svc
+kubectl logs deployment/product-service
+
+### Access API using NodePort:
+http://localhost:<NODE_PORT>
+---
 
 ## License
 MIT License
